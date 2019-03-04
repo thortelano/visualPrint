@@ -3,8 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package Print;
+package editor;
 
+import clasesBase.clsPaperFactory;
+import clasesBase.clsPrint;
+import clasesBase.clsPrintElemento;
+import Print.clsVisor;
 import miColorChooser.miColorChooser;
 import miFontChooser.miFontChooser;
 import java.awt.Color;
@@ -151,14 +155,14 @@ public class frmEditor extends JDialog {
     JCheckBox chkTileable= new JCheckBox();
     JCheckBox chkRelleno= new JCheckBox();
     
-    frmEditor(clsPrint p, clsVisor v){
+    public frmEditor(clsPrint p, clsVisor v){
         super();
         printer = p;
         visor=v;
         
         inicializar();
     }
-    frmEditor(JDialog d,clsPrint p, clsVisor v){
+    public frmEditor(JDialog d,clsPrint p, clsVisor v){
         super(d);
         printer = p;
         visor=v;

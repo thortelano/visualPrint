@@ -6,8 +6,8 @@ package importExport;
  * and open the template in the editor.
  */
 
-import Print.clsPrint;
-import Print.clsPrintElemento;
+import clasesBase.clsPrint;
+import clasesBase.clsPrintElemento;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Point;

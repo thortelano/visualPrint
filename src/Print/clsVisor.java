@@ -5,6 +5,7 @@
  */
 package Print;
 
+import clasesBase.clsPrint;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;

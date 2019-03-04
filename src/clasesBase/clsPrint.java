@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package Print;
+package clasesBase;
 
 import H2.clsH2;
 import H2.clsH2R;
@@ -90,7 +90,7 @@ public class clsPrint implements Printable, Serializable{
     BasicStroke dashed=new BasicStroke(.0f,BasicStroke.CAP_BUTT,BasicStroke.JOIN_MITER,10.f,dash,0.0f); // linea a trazos
     
     //CONSTRUCTOR
-    clsPrint(){
+    public clsPrint(){
         super();
         inicializar();
     }

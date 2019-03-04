@@ -4,6 +4,8 @@
  */
 package Print;
 
+import clasesBase.clsPrint;
+import editor.frmEditor;
 import H2.clsH2;
 import importExport.clsImportExportV1;
 import java.awt.BorderLayout;
