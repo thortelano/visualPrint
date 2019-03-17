@@ -153,12 +153,14 @@ public class frmPrint extends JDialog {
             inicializarVisor();
             inicializarEditor();
             inicializarBotones();
-            inicializarListeners();
+            
 
             inicializarUI();
             
             cargarPaginas(cmbPagina);
             cargarZoom(cmbZoom);
+            
+            inicializarListeners();
         }
         private void inicializarApariencia(){
             //apariencia de la aplicacion
@@ -616,10 +618,12 @@ public class frmPrint extends JDialog {
             printer.setDB(DB);
         }
         public void setOrigenDatos(String origen) {
-            printer.setOrigenDatos(origen);
+            if (printer!=null){
+                printer.setOrigenDatos(origen);
 
-            cargarPaginas(cmbPagina);
-            editor.actualizar();
+                cargarPaginas(cmbPagina);
+                if (editor.isVisible()) editor.actualizar();
+            }
         }
         public void setMode(int m){
             mode=m;

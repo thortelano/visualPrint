@@ -53,7 +53,7 @@ public class frmEditor extends JDialog {
     private Color colorBorder=new Color(21, 164, 250);
     private Color colorBackgroundSelect=new Color(243, 244, 249);
     private Color colorBackgroundUnselect=new Color(240, 240, 240);
-    private int seccionActual;
+    private int layerActual;
     private clsPaperFactory formatos = new clsPaperFactory();
     
     JList lista = new JList();
@@ -193,15 +193,15 @@ public class frmEditor extends JDialog {
         inicializarUI();
         this.add(pnlEditor);
         
-        inicializarListener();
-        
-        seccionActual=0;
-        cmbLayer.setSelectedIndex(seccionActual);
+        layerActual=0;
+        cmbLayer.setSelectedIndex(layerActual);
         cmbTipo.setEnabled(false);
         
         mostrarLista();
         mostrarPrinter();
         mostrarElemento();
+        
+        inicializarListener();
     }
     private void inicializarTexto(){
         txtX= new miTextField(colorBorder,colorBackgroundSelect);
@@ -760,7 +760,6 @@ public class frmEditor extends JDialog {
     //FUNCIONES DE MUESTRA
         public void mostrarLista(){
             clsPrintElemento aux;
-
             modelo.clear();
             
             for (int i=0;i<printer.getSelectedLayer().getCantidadElementos();i++){
@@ -966,7 +965,7 @@ public class frmEditor extends JDialog {
             visor.repaint();
         }
         public void actualizarElemeto(int layer, int pos){
-            seccionActual=layer;
+            layerActual=layer;
             cmbLayer.setSelectedIndex(layer);
             
             mostrarLista();
@@ -1534,7 +1533,7 @@ public class frmEditor extends JDialog {
             txtZoom.addFocusListener(inicializarFocusZoom());
             
             lista.addMouseListener(inicializarListenerLista());
-            cmbLayer.addActionListener(inicializarListenerSeccion());
+            cmbLayer.addActionListener(inicializarListenerLayer());
             btnNuevo.addActionListener(inicializarListenerNuevo());
             btnDuplicar.addActionListener(inicializarListenerDuplicar());
             btnEliminar.addActionListener(inicializarListenerEliminar());
@@ -1591,6 +1590,7 @@ public class frmEditor extends JDialog {
                                     cmbTipo.setEnabled(true);
                                     if (cmbLayer.getSelectedIndex()>-1 && lista.getSelectedIndex()>-1){
                                         printer.setSelected(printer.getSelectedLayer().getObjeto(lista.getSelectedIndex()));
+                                        
                                         mostrarElemento();
                                         visor.repaint();
                                     }
@@ -1617,10 +1617,12 @@ public class frmEditor extends JDialog {
                             }
             };
         }
-        private ActionListener inicializarListenerSeccion(){
+        private ActionListener inicializarListenerLayer(){
             return (ActionEvent evt) -> {
-                seccionActual=cmbLayer.getSelectedIndex();
-                actualizar();
+                layerActual=cmbLayer.getSelectedIndex();
+                printer.setSelectedLayer(layerActual);
+                
+                mostrarLista();
             };
         }
         private ActionListener inicializarListenerNuevo(){

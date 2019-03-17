@@ -230,17 +230,17 @@ public class clsImportExportV1 {
                         break;
                     case '2':
                         //LINEA TIPO 2 OBJETOS EN CONTENIDO
-                        insertElemento(linea,2);
+                        insertElemento(linea,1);
                         break;
                     case '3':
                         //LINEA TIPO 3 OBJETOS EN PIE
-                        insertElemento(linea,1);
+                        insertElemento(linea,2);
                         break;
                 }
             }
-            printer.setLayerName(0, "EMCABEZADO");
-            printer.setLayerName(1, "PIE");
-            printer.setLayerName(2, "CONTENIDO");
+            printer.setLayerName(0, "ENCABEZADO");
+            printer.setLayerName(1, "CONTENIDO");
+            printer.setLayerName(2, "PIE");
             
         } catch (Exception e) {
             e.printStackTrace();

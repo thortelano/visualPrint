@@ -106,7 +106,6 @@ public class clsPrint implements Printable, Serializable{
         
         capas= new ArrayList();
         
-
         paginas=1;
         paginaActual=1;
         origenDatos="";
@@ -117,8 +116,7 @@ public class clsPrint implements Printable, Serializable{
         fileDir="";
         
         selected=null;
-        selectedLayer=newLayer("DEFAULT");
-        
+        selectedLayer=newLayer(0,"DEFAULT");
         selectedId=-1;
     }
     private void inicializarMargen(){
@@ -227,7 +225,8 @@ public class clsPrint implements Printable, Serializable{
         }
         public void setSelected (clsPrintElemento s){
             selected = s;
-            searchElement(s);
+            
+            //searchElement(s);
         }
         public void setFormatoPapel(String s){
             formatoPapel=s;
@@ -247,7 +246,9 @@ public class clsPrint implements Printable, Serializable{
             fileDir=s;
         }
         public void setSelectedLayer(int n){
-            selectedLayer=capas.get(n);
+            if (n>-1 && n<capas.size()){
+                selectedLayer=capas.get(n);
+            }
         }
         public void setSelectedLayer(clsPrintLayer l){
             selectedLayer=l;
@@ -256,7 +257,9 @@ public class clsPrint implements Printable, Serializable{
             selectedId=n;
         }
         public void setLayerName(int layer,String n){
-            capas.get(layer).setNombre(n);
+            if (layer>-1 && layer<capas.size()){
+                capas.get(layer).setNombre(n);
+            }
         }
         
         public Point getPunto0(){
