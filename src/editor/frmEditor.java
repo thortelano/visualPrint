@@ -708,6 +708,7 @@ public class frmEditor extends JDialog {
     
     //FUNCIONES DE CARGA
         private void cargarLayers(JComboBox j){
+            j.removeAllItems();
             for(int i =0;i<printer.getCantidadLayers();i++){
                 j.addItem(printer.getLayer(i).getNombre());
             }

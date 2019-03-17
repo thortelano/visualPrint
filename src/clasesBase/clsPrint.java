@@ -117,7 +117,7 @@ public class clsPrint implements Printable, Serializable{
         fileDir="";
         
         selected=null;
-        selectedLayer=newLayer();
+        selectedLayer=newLayer("DEFAULT");
         
         selectedId=-1;
     }
