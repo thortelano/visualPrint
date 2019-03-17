@@ -63,7 +63,7 @@ public class clsPrintElemento implements Serializable {
             setBordeEspesor(1);
             setRelleno(false);
             setRellenoColor(Color.black);
-            setSeccion(2);
+            setLayer(2);
             alineacionVertical=1;
             alineacionHorizontal=1;
             repeticiones=0;
@@ -251,7 +251,7 @@ public class clsPrintElemento implements Serializable {
         public void setRellenoColor(Color rellenoColor) {
             this.rellenoColor = rellenoColor;
         }
-        public void setSeccion(int seccion) {
+        public void setLayer(int seccion) {
             this.seccion = seccion;
         }
         public void setColumna(String Columna) {

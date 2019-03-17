@@ -465,7 +465,7 @@ public class frmPrint extends JDialog {
             }
         }
         private void exportV1(){
-            if (printer.getCantidadElementos()>0 || printer.getCantidadElementosEncabezado()>0 || printer.getCantidadElementosPie()>0){
+            if (!printer.isVacio()){
                 JFileChooser fc = new JFileChooser(defaultDir);
                 fc.setSelectedFile(new File(fileName));
 
@@ -761,7 +761,7 @@ public class frmPrint extends JDialog {
                             if (e.getClickCount()==1){
                                 //PUNTO CLICK
                                 if(editor.isVisible()) {
-                                    editor.actualizarElemeto(printer.getSelectedLayer(),printer.getSelectedId());
+                                    editor.actualizarElemeto(printer.getSelectedLayerID(),printer.getSelectedId());
                                 }
                             }
 			}

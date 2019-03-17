@@ -43,20 +43,25 @@ public class clsImportExportV1 {
         archivo=a;
     }
     
+    @Deprecated
     public void exportV1(){
         String sep="|";
         String linea="";
         FileWriter fichero = null;
         PrintWriter pw = null;
         clsPrintElemento aux;
-        
+        /*
         try
         {
             fichero = new FileWriter(archivo);
             pw = new PrintWriter(fichero);
             
             //LINEA TIPO 0 DATOS DEL ARCHIVO
-                linea = "0" + sep + printer.getPaginas() + sep + printer.getMargenX() + sep + printer.getMargenY() + sep + printer.getOrigenDatos() + sep + 
+                linea = "0" + sep + 
+                        printer.getPaginas() + sep + 
+                        printer.getMargenX() + sep + 
+                        printer.getMargenY() + sep + 
+                        printer.getOrigenDatos() + sep + 
                         printer.getCantidadElementosEncabezado() + sep +
                         printer.getCantidadElementos() + sep +
                         printer.getCantidadElementosPie();
@@ -193,7 +198,7 @@ public class clsImportExportV1 {
            }
         }
         
-        
+        */
     }
     public void importV1(){
         String linea="";
@@ -233,6 +238,9 @@ public class clsImportExportV1 {
                         break;
                 }
             }
+            printer.setLayerName(0, "EMCABEZADO");
+            printer.setLayerName(1, "PIE");
+            printer.setLayerName(2, "CONTENIDO");
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -246,7 +254,9 @@ public class clsImportExportV1 {
            }
         }
     }
-    private void insertElemento(String s, int sec){
+    private void insertElemento(String s, int layer){
+        while (!printer.isLayer(layer)) printer.newLayer();
+        
         clsPrintElemento aux= new clsPrintElemento();
         String[] partes = s.split(sep1);
         
@@ -268,14 +278,14 @@ public class clsImportExportV1 {
         aux.setBordeEspesor(Integer.valueOf(partes[24]));
         aux.setRelleno(Boolean.valueOf(partes[25]));
         aux.setRellenoColor(new Color(Integer.valueOf(partes[26]),Integer.valueOf(partes[27]),Integer.valueOf(partes[28])));
-        aux.setSeccion(Integer.valueOf(partes[29]));
+        aux.setLayer(Integer.valueOf(partes[29]));
         aux.setAlineacionVertical(Integer.valueOf(partes[30]));
         aux.setAlineacionHorizontal(Integer.valueOf(partes[31]));
         aux.setRepeticiones(Integer.valueOf(partes[32]));
         aux.setTileable(Boolean.valueOf(partes[33]));
         aux.setPosicion(Integer.valueOf(partes[34]));
         
-        printer.addElemento(aux, sec);
+        printer.addElemento(aux, layer);
     }
     
 }

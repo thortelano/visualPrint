@@ -86,7 +86,7 @@ public class clsVisor extends JComponent {
         p.x = p.x-(printer.getPunto0().x+printer.getMargenX());
         p.y = p.y-(printer.getPunto0().y+printer.getMargenY());
                                 
-        printer.searchDown(p);
+        printer.searchClick(p);
         repaint();
     }
     private void buscarObjetoVistaNext(Point e){
@@ -97,7 +97,7 @@ public class clsVisor extends JComponent {
         p.x = p.x-(printer.getPunto0().x+printer.getMargenX());
         p.y = p.y-(printer.getPunto0().y+printer.getMargenY());
                                 
-        printer.searchDownNext(p);
+        printer.searchClickNext(p);
         repaint();
     }
     private void centrarVista(){

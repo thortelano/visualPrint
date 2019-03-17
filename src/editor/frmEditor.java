@@ -180,8 +180,8 @@ public class frmEditor extends JDialog {
         inicializarBotones();
         inicializarColorBorder();
         
-        cargarSeccion(cmbLayer);
-        cargarSeccion(cmbToLayer);
+        cargarLayers(cmbLayer);
+        cargarLayers(cmbToLayer);
         cargarAlineacionH(cmbAlineacionH);
         cargarAlineacionV(cmbAlineacionV);
         cargarFormatos(cmbFormato);
@@ -707,10 +707,10 @@ public class frmEditor extends JDialog {
     }
     
     //FUNCIONES DE CARGA
-        private void cargarSeccion(JComboBox j){
-            j.addItem("Encabezado");
-            j.addItem("Pie");
-            j.addItem("Contenido");
+        private void cargarLayers(JComboBox j){
+            for(int i =0;i<printer.getCantidadLayers();i++){
+                j.addItem(printer.getLayer(i).getNombre());
+            }
         }
         private void cargarAlineacionH(JComboBox j){
             j.addItem("Centrado");
@@ -761,33 +761,20 @@ public class frmEditor extends JDialog {
             clsPrintElemento aux;
 
             modelo.clear();
-            switch (seccionActual){
-                case 0:
-                    for (int i=0;i<printer.getCantidadElementos(0);i++){
-                        aux=printer.getObjeto(0, i);
-                        modelo.addElement(i + "-" + aux.getTipoString() + "-" + aux.getTexto());
-                    }
-                    break;
-                case 1:
-                    for (int i=0;i<printer.getCantidadElementos(1);i++){
-                        aux=printer.getObjeto(1, i);
-                        modelo.addElement(i + "-" + aux.getTipoString()+ "-" + aux.getTexto());
-                    }
-                    break;
-                case 2:
-                    for (int i=0;i<printer.getCantidadElementos(2);i++){
-                        aux=printer.getObjeto(2, i);
-                        modelo.addElement(i + "-" + aux.getTipoString()+ "-" + aux.getTexto());
-                    }
-                    break;
+            
+            for (int i=0;i<printer.getSelectedLayer().getCantidadElementos();i++){
+                aux=printer.getSelectedLayer().getObjeto(i);
+                modelo.addElement(i + "-" + aux.getTipoString() + "-" + aux.getTexto());
             }
-
+            
             lista.setModel(modelo);
-
         }
         public void mostrarPrinter(){
             if (printer!=null){
                 //MUESTRA DATOS DEL PRINTER
+                cargarLayers(cmbLayer);
+                cargarLayers(cmbToLayer);
+                
                 cmbFormato.setSelectedIndex(formatos.getID(printer.getFormatoPapel()));
                 cmbOrientacion.setSelectedIndex(printer.getOrientacion());
                 txtMargenX.setText(String.valueOf(printer.getMargenX()));
@@ -876,7 +863,7 @@ public class frmEditor extends JDialog {
         private void subirObjeto(){
             int numero=lista.getSelectedIndex();
             if (numero>-1){
-                printer.subirElemento(cmbLayer.getSelectedIndex(), numero);
+                printer.moveUP(cmbLayer.getSelectedIndex(), numero);
                 numero--;
             }
 
@@ -886,7 +873,7 @@ public class frmEditor extends JDialog {
         private void bajarObjeto(){
             int numero=lista.getSelectedIndex();
                 if (numero>-1){
-                    printer.bajarElemento(cmbLayer.getSelectedIndex(), numero);
+                    printer.moveDown(cmbLayer.getSelectedIndex(), numero);
                     numero++;
                 }
                 actualizar();
@@ -1602,7 +1589,7 @@ public class frmEditor extends JDialog {
                                 if (e.getClickCount()==1){
                                     cmbTipo.setEnabled(true);
                                     if (cmbLayer.getSelectedIndex()>-1 && lista.getSelectedIndex()>-1){
-                                        printer.setSelected(printer.getObjeto(cmbLayer.getSelectedIndex(),lista.getSelectedIndex()));
+                                        printer.setSelected(printer.getSelectedLayer().getObjeto(lista.getSelectedIndex()));
                                         mostrarElemento();
                                         visor.repaint();
                                     }
@@ -1658,7 +1645,7 @@ public class frmEditor extends JDialog {
                 int numero=lista.getSelectedIndex();
                 if (numero>-1){
                     if (JOptionPane.showConfirmDialog(null,"Esta seguro de Eliminar")==JOptionPane.OK_OPTION){
-                        printer.eliminarElemento(cmbLayer.getSelectedIndex(), numero);
+                        printer.removeElemento(cmbLayer.getSelectedIndex(), numero);
                     }
                 }
                 actualizar();

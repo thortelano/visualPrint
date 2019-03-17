@@ -65,9 +65,8 @@ public class clsPrint implements Printable, Serializable{
     private int paginas;
     private int paginaActual;
     
-    private int idElemento;
     private clsPrintElemento selected;
-    private int selectedLayer;
+    private clsPrintLayer selectedLayer;
     private int selectedId;
     
     //VARIABLES ARCHIVO
@@ -78,10 +77,8 @@ public class clsPrint implements Printable, Serializable{
     private String origenDatos; //sentencia SQL para acceder a la DB
     private clsH2 DB;
     
-    //OBJETOS DE IMPRESION
-    ArrayList<clsPrintElemento> elementosEncabezado;
-    ArrayList<clsPrintElemento> elementosPie;
-    ArrayList<clsPrintElemento> elementos;
+    //CAPAS DE IMPRESION
+    ArrayList<clsPrintLayer> capas;
     
     
     //ESTILOS DE LINEA
@@ -107,9 +104,8 @@ public class clsPrint implements Printable, Serializable{
         
         punto0.setLocation(50,50);
         
-        elementosEncabezado= new ArrayList();
-        elementosPie= new ArrayList();
-        elementos= new ArrayList();
+        capas= new ArrayList();
+        
 
         paginas=1;
         paginaActual=1;
@@ -121,7 +117,8 @@ public class clsPrint implements Printable, Serializable{
         fileDir="";
         
         selected=null;
-        selectedLayer=-1;
+        selectedLayer=newLayer();
+        
         selectedId=-1;
     }
     private void inicializarMargen(){
@@ -146,34 +143,38 @@ public class clsPrint implements Printable, Serializable{
             Graphics2D g2 = (Graphics2D) graphics;
             g2.translate((int)pf.getImageableX(),(int)pf.getImageableY());
             
-            
-                mostrarEncabezado(g2,pageIndex);
-                mostrarPie(g2,pageIndex);
-                mostrarContenido(g2,pageIndex);
-            
+            for (int i=0;i<capas.size();i++){
+                if (capas.get(i).isPrintable()){
+                    mostrarLayer(g2,pageIndex,i);
+                }
+            }
             return (PAGE_EXISTS);
         } else {
             return (NO_SUCH_PAGE);
         }
     }
-    
     public void VistaPreliminar(Graphics ga){
         //muestra la hoja + el contenido
         Graphics2D g2 = (Graphics2D) ga;
         g2.scale(zoom,zoom);
             if (mode==EDIT_MODE){
                 mostrarFondoHoja(ga);
-                mostrarEncabezadoEdit(ga,paginaActual-1);
-                mostrarPieEdit(ga,paginaActual-1);
-                mostrarContenidoEdit(ga,paginaActual-1);
+                for (int i=0;i<capas.size();i++){
+                    if (capas.get(i).isVisible()){
+                        mostrarLayerEdit(ga,paginaActual-1, i);
+                    }
+                }
+                
                 if (selected != null){
                     mostrarSeleccion(ga,selected);
                 }
             }else if (mode==PRINT_MODE){
                 mostrarFondoHoja(ga);
-                mostrarEncabezado(ga,paginaActual-1);
-                mostrarPie(ga,paginaActual-1);
-                mostrarContenido(ga,paginaActual-1);
+                for (int i=0;i<capas.size();i++){
+                    if (capas.get(i).isVisible()){
+                        mostrarLayer(ga,paginaActual-1,i);
+                    }
+                }
             }
         
     }
@@ -216,9 +217,6 @@ public class clsPrint implements Printable, Serializable{
         public void setMode(int b){
             mode=b;
         }
-        public void setIdElemento(int i){
-            idElemento=i;
-        }
         public void setARG(String s[]){
             arg=s;
         }
@@ -249,38 +247,29 @@ public class clsPrint implements Printable, Serializable{
             fileDir=s;
         }
         public void setSelectedLayer(int n){
-            selectedLayer=n;
+            selectedLayer=capas.get(n);
+        }
+        public void setSelectedLayer(clsPrintLayer l){
+            selectedLayer=l;
         }
         public void setSelectedId(int n){
             selectedId=n;
+        }
+        public void setLayerName(int layer,String n){
+            capas.get(layer).setNombre(n);
         }
         
         public Point getPunto0(){
             return punto0;
         }
-        public int getCantidadElementosEncabezado(){
-            return elementosEncabezado.size();
-        }
-        public int getCantidadElementosPie(){
-            return elementosPie.size();
+        public int getCantidadLayers(){
+            return capas.size();
         }
         public int getCantidadElementos(){
-            return elementos.size();
+            return selectedLayer.getCantidadElementos();
         }
-        public int getCantidadElementos(int tipo){
-            int cantidad=0;
-            switch (tipo){
-                case 0:
-                    cantidad= elementosEncabezado.size();
-                    break;
-                case 1:
-                    cantidad= elementosPie.size();
-                    break;
-                case 2:
-                    cantidad= elementos.size();
-                    break;
-            }
-            return cantidad;
+        public int getCantidadElementos(int layer){
+            return capas.get(layer).getCantidadElementos();
         }
         public double getZoom(){
             return zoom;
@@ -294,27 +283,8 @@ public class clsPrint implements Printable, Serializable{
         public int getMargenY(){
             return margenY;
         }
-        public clsPrintElemento getObjeto(int tipo,int numero){
-            clsPrintElemento aux=null;
-            switch (tipo){
-                case 0:
-                    aux=elementosEncabezado.get(numero);
-                    break;
-                case 1:
-                    aux=elementosPie.get(numero); 
-                    break;
-                case 2:
-                    aux=elementos.get(numero);
-                    break;
-            }
-            return aux;
-
-        }
         public int getMode(){
             return mode;
-        }
-        public int getIdElemento(){
-            return idElemento;
         }
         public String getARG(int n){
             return arg[n];
@@ -346,7 +316,10 @@ public class clsPrint implements Printable, Serializable{
         public Font getFuente(){
             return fuente;
         }
-        public int getSelectedLayer(){
+        public int getSelectedLayerID(){
+            return selectedLayer.getLayerID();
+        }
+        public clsPrintLayer getSelectedLayer(){
             return selectedLayer;
         }
         public int getSelectedId(){
@@ -360,6 +333,20 @@ public class clsPrint implements Printable, Serializable{
         }
         public int getOrientacion(){
             return orientacion;
+        }
+        public boolean isVacio(){
+            boolean valor = true;
+            for (int i =0;i<capas.size();i++){
+                if (capas.get(i).getCantidadElementos()>0){
+                    valor=false;
+                    break;
+                }
+            }
+            
+            return valor;
+        }
+        public clsPrintLayer getLayer(int n){
+            return capas.get(n);
         }
     
     // FUNCIONES PARA MOSTRAR LOS OBJETOS
@@ -384,40 +371,11 @@ public class clsPrint implements Printable, Serializable{
             g2.drawString("TAMAÑO HOJA: "+ formatoPapel + " - " + puntosToMM(hoja.getWidth()) + "x" + puntosToMM(hoja.getHeight()), 0, -10);
         }
 
-        private void mostrarEncabezado(Graphics ga, int pag){
+        private void mostrarLayer(Graphics ga, int pag, int layer){
             clsPrintElemento ele;
 
-            for (int i =0;i<elementosEncabezado.size();i++ ){
-                ele=(clsPrintElemento)elementosEncabezado.get(i);
-
-                switch (ele.getTipo()){
-                    case 1:
-                        mostrarImagen(ga,ele);
-                        break;
-                    case 2:
-                        mostrarTitulo(ga,ele);
-                        break;
-                    case 3:
-                        mostrarTexto(ga,ele,pag);
-                        break;
-                    case 4:
-                        mostrarLinea(ga,ele);
-                        break;
-                    case 5:
-                        mostrarRectangulo(ga,ele);
-                        break;
-                    case 6:
-                        mostrarCirculo(ga,ele);
-                        break;
-                }
-            }
-
-        }
-        private void mostrarPie(Graphics ga, int pag){
-            clsPrintElemento ele;
-
-            for (int i =0;i<elementosPie.size();i++ ){
-                ele=(clsPrintElemento)elementosPie.get(i);
+            for (int i =0;i<capas.get(layer).getCantidadElementos();i++ ){
+                ele=(clsPrintElemento)capas.get(layer).getObjeto(i);
 
                 switch (ele.getTipo()){
                     case 1:
@@ -444,103 +402,11 @@ public class clsPrint implements Printable, Serializable{
             }
 
         }
-        private void mostrarContenido(Graphics ga, int pag){
-            clsPrintElemento ele;
-
-            for (int i =0;i<elementos.size();i++ ){
-                ele=(clsPrintElemento)elementos.get(i);
-
-                switch (ele.getTipo()){
-                    case 1:
-                        mostrarImagen(ga,ele);
-                        break;
-                    case 2:
-                        mostrarTitulo(ga,ele);
-                        break;
-                    case 3:
-                        mostrarTexto(ga,ele,pag);
-                        break;
-                    case 4:
-                        mostrarLinea(ga,ele);
-                        break;
-                    case 5:
-                        mostrarRectangulo(ga,ele);
-                        break;
-                    case 6:
-                        mostrarCirculo(ga,ele);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-        }
-
-        private void mostrarEncabezadoEdit(Graphics ga, int pag){
-            clsPrintElemento ele;
-
-            for (int i =0;i<elementosEncabezado.size();i++ ){
-                ele=(clsPrintElemento)elementosEncabezado.get(i);
-
-                switch (ele.getTipo()){
-                    case 1:
-                        mostrarImagen(ga,ele);
-                        break;
-                    case 2:
-                        mostrarTitulo(ga,ele);
-                        break;
-                    case 3:
-                        mostrarTextoEdit(ga,ele,pag);
-                        break;
-                    case 4:
-                        mostrarLinea(ga,ele);
-                        break;
-                    case 5:
-                        mostrarRectangulo(ga,ele);
-                        break;
-                    case 6:
-                        mostrarCirculo(ga,ele);
-                        break;
-                }
-            }
-
-        }
-        private void mostrarPieEdit(Graphics ga, int pag){
-            clsPrintElemento ele;
-
-            for (int i =0;i<elementosPie.size();i++ ){
-                ele=(clsPrintElemento)elementosPie.get(i);
-
-                switch (ele.getTipo()){
-                    case 1:
-                        mostrarImagen(ga,ele);
-                        break;
-                    case 2:
-                        mostrarTitulo(ga,ele);
-                        break;
-                    case 3:
-                        mostrarTextoEdit(ga,ele,pag);
-                        break;
-                    case 4:
-                        mostrarLinea(ga,ele);
-                        break;
-                    case 5:
-                        mostrarRectangulo(ga,ele);
-                        break;
-                    case 6:
-                        mostrarCirculo(ga,ele);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-        }
-        private void mostrarContenidoEdit(Graphics ga, int pag){
+        private void mostrarLayerEdit(Graphics ga, int pag, int layer){
         clsPrintElemento ele;
         
-        for (int i =0;i<elementos.size();i++ ){
-            ele=(clsPrintElemento)elementos.get(i);
+        for (int i =0;i<capas.get(layer).getCantidadElementos();i++ ){
+            ele=(clsPrintElemento)capas.get(layer).getObjeto(i);
             
             switch (ele.getTipo()){
                 case 1:
@@ -870,116 +736,52 @@ public class clsPrint implements Printable, Serializable{
     }
     
     //FUNCIONES DE CREACION
-        public clsPrintElemento addImagen(int X, int Y, int Ancho, int Alto, String Direccion, int Seccion){
+        public clsPrintElemento addImagen(int X, int Y, int Ancho, int Alto, String Direccion, int layer){
             clsPrintElemento ele=new clsPrintElemento();
             ele.crearImagen(X, Y, Ancho, Alto, Direccion);
-            ele.setSeccion(Seccion);
-
-            switch (Seccion){
-                case 0:
-                    elementosEncabezado.add(ele);
-                    break;
-                case 1:
-                    elementosPie.add(ele);
-                    break;
-                case 2:
-                    elementos.add(ele);
-                    break;
-            }
-
+            ele.setLayer(layer);
+            capas.get(layer).addElemento(ele);
+            
             return ele;
         }
-        public clsPrintElemento addTitulo(int X, int Y, int Ancho, int Alto, String Texto, Font Fuente, Color Col, int Seccion){
+        public clsPrintElemento addTitulo(int X, int Y, int Ancho, int Alto, String Texto, Font Fuente, Color Col, int layer){
             clsPrintElemento ele=new clsPrintElemento();
             ele.crearTitulo(X, Y, Ancho, Alto,Texto,Fuente,Col);
-            ele.setSeccion(Seccion);
-
-            switch (Seccion){
-                case 0:
-                    elementosEncabezado.add(ele);
-                    break;
-                case 1:
-                    elementosPie.add(ele);
-                    break;
-                case 2:
-                    elementos.add(ele);
-                    break;
-            }
-
+            ele.setLayer(layer);
+            capas.get(layer).addElemento(ele);
+            
             return ele;
         }
-        public clsPrintElemento addTexto(int X, int Y, int Ancho, int Alto,int Tipo, String Origen, Font Fuente, Color Col, int Seccion){
+        public clsPrintElemento addTexto(int X, int Y, int Ancho, int Alto,int Tipo, String Origen, Font Fuente, Color Col, int layer){
             clsPrintElemento ele=new clsPrintElemento();
             ele.crearTexto(X, Y, Ancho, Alto,Tipo,Origen,Fuente,Col);
-            ele.setSeccion(Seccion);
-
-            switch (Seccion){
-                case 0:
-                    elementosEncabezado.add(ele);
-                    break;
-                case 1:
-                    elementosPie.add(ele);
-                    break;
-                case 2:
-                    elementos.add(ele);
-                    break;
-            }
+            ele.setLayer(layer);
+            capas.get(layer).addElemento(ele);
 
             return ele;
         }
-        public clsPrintElemento addLinea(int X, int Y, int Ancho, int Alto, int Espesor, Color color, int Seccion){
+        public clsPrintElemento addLinea(int X, int Y, int Ancho, int Alto, int Espesor, Color color, int layer){
             clsPrintElemento ele=new clsPrintElemento();
             ele.crearLinea(X, Y, Ancho, Alto, Espesor, color);
-            ele.setSeccion(Seccion);
-
-            switch (Seccion){
-                case 0:
-                    elementosEncabezado.add(ele);
-                    break;
-                case 1:
-                    elementosPie.add(ele);
-                    break;
-                case 2:
-                    elementos.add(ele);
-                    break;
-            }
+            ele.setLayer(layer);
+            capas.get(layer).addElemento(ele);
+            
             return ele;
         }
-        public clsPrintElemento addRectangulo(int X, int Y, int Ancho, int Alto, int Espesor, Color color, int Seccion){
+        public clsPrintElemento addRectangulo(int X, int Y, int Ancho, int Alto, int Espesor, Color color, int layer){
             clsPrintElemento ele=new clsPrintElemento();
             ele.crearRectangulo(X, Y, Ancho, Alto, Espesor, color);
-            ele.setSeccion(Seccion);
-
-            switch (Seccion){
-                case 0:
-                    elementosEncabezado.add(ele);
-                    break;
-                case 1:
-                    elementosPie.add(ele);
-                    break;
-                case 2:
-                    elementos.add(ele);
-                    break;
-            }
+            ele.setLayer(layer);
+            capas.get(layer).addElemento(ele);
 
             return ele;
         }
-        public clsPrintElemento addCirculo(int X, int Y, int Radio, int Espesor, Color color, int Seccion){
+        public clsPrintElemento addCirculo(int X, int Y, int Radio, int Espesor, Color color, int layer){
             clsPrintElemento ele=new clsPrintElemento();
             ele.crearCirculo(X, Y, Radio, Espesor, color);
-            ele.setSeccion(Seccion);
-
-            switch (Seccion){
-                case 0:
-                    elementosEncabezado.add(ele);
-                    break;
-                case 1:
-                    elementosPie.add(ele);
-                    break;
-                case 2:
-                    elementos.add(ele);
-                    break;
-            }
+            ele.setLayer(layer);
+            capas.get(layer).addElemento(ele);
+            
             return ele;
         }
     
@@ -1019,35 +821,21 @@ public class clsPrint implements Printable, Serializable{
                             fileDir=(String)aux;
                             aux=ois.readObject();
                             //origenDatos=(String)aux;
+                            
+                            
                         
                         //CARGAMOS LAS CAPAS
                             //LIMPIAMOS LAS CAPAS ACTUALES
-                            elementosEncabezado.clear();
-                            elementosPie.clear();
-                            elementos.clear();
-
-                            //CARGAMOS EL CONTENIDO DE CADA CAPA
+                            capas.clear();
+                            
+                            //CARGAMOS LAS CAPA
                             aux=ois.readObject();
                             cant=(int)aux;
+                            
                             for (int i=0;i<cant;i++){
                                 aux=ois.readObject();
-                                elementosEncabezado.add((clsPrintElemento)aux);
+                                capas.add((clsPrintLayer)aux);
                             }
-                            aux=ois.readObject();
-                            cant=(int)aux;
-                            for (int i=0;i<cant;i++){
-                                aux=ois.readObject();
-                                elementosPie.add((clsPrintElemento)aux);
-                            }
-                            aux=ois.readObject();
-                            cant=(int)aux;
-                            //while (aux!=null){
-                            for (int i=0;i<cant;i++){
-                                aux=ois.readObject();
-                                elementos.add((clsPrintElemento)aux);
-                            }
-
-
                     }
                 } catch (IOException | ClassNotFoundException ex) {            
                     JOptionPane.showMessageDialog(null,"ERROR AL ABRIR ARCHIVO BD\nERROR : " + ex.getMessage());
@@ -1074,18 +862,11 @@ public class clsPrint implements Printable, Serializable{
                     oos.writeObject(origenDatos);
                     
                 //GUARDAMOS CAPAS
-                    oos.writeObject(elementosEncabezado.size());
-                    for (int i=0;i<elementosEncabezado.size();i++){
-                        oos.writeObject(elementosEncabezado.get(i));
+                    oos.writeObject(capas.size());
+                    for (int i=0;i<capas.size();i++){
+                        oos.writeObject(capas.get(i));
                     }
-                    oos.writeObject(elementosPie.size());
-                    for (int i=0;i<elementosPie.size();i++){
-                        oos.writeObject(elementosPie.get(i));
-                    }
-                    oos.writeObject(elementos.size());
-                    for (int i=0;i<elementos.size();i++){
-                        oos.writeObject(elementos.get(i));
-                    }
+                    
                 
                 //CERRAMOS EL ARCHIVO
                     oos.close();
@@ -1095,219 +876,132 @@ public class clsPrint implements Printable, Serializable{
         }
     
     //FUNCIONES DE MOVIMIENTO DE ELEMENTOS
-        public void subirElemento(int seccion, int numero){
-            clsPrintElemento aux1=null;
-            clsPrintElemento aux2=null;
-
+        public void moveUP(int layer, int numero){
             if (numero>0){
-                switch (seccion){
-                    case 0:
-                        aux1= elementosEncabezado.get(numero-1);
-                        aux2= elementosEncabezado.get(numero);
-                        elementosEncabezado.set(numero-1,aux2);
-                        elementosEncabezado.set(numero,aux1);
-                        break;
-                    case 1:
-                        aux1= elementosPie.get(numero-1);
-                        aux2= elementosPie.get(numero);
-                        elementosPie.set(numero-1,aux2);
-                        elementosPie.set(numero,aux1);
-                        break;
-                    case 2:
-                        aux1= elementos.get(numero-1);
-                        aux2= elementos.get(numero);
-                        elementos.set(numero-1,aux2);
-                        elementos.set(numero,aux1);
-                        break;
-                }
+                capas.get(layer).moveUp(numero);
             }
         }
-        public void bajarElemento(int seccion, int numero){
-            clsPrintElemento aux1=null;
-            clsPrintElemento aux2=null;
-
-            switch (seccion){
-                    case 0:
-                        if (numero<elementosEncabezado.size()-1){
-                            aux1= elementosEncabezado.get(numero+1);
-                            aux2= elementosEncabezado.get(numero);
-
-                            elementosEncabezado.set(numero+1,aux2);
-                            elementosEncabezado.set(numero,aux1);
-                        }
-                        break;
-                    case 1:
-                        if (numero<elementosPie.size()-1){
-                            aux1= elementosPie.get(numero+1);
-                            aux2= elementosPie.get(numero);
-                            elementosPie.set(numero+1,aux2);
-                            elementosPie.set(numero,aux1);
-                        }
-                        break;
-                    case 2:
-                        if (numero<elementos.size()-1){
-                            aux1= elementos.get(numero+1);
-                            aux2= elementos.get(numero);
-                            elementos.set(numero+1,aux2);
-                            elementos.set(numero,aux1);
-                        }
-                        break;
-                }
-
+        public void moveDown(int layer, int numero){
+            if (numero>0){
+                capas.get(layer).moveDown(numero);
+            }
         }
-        public void moverElemento(int seccionI, int numero,int seccionF){
+        public void moverElemento(int layerI, int numero,int layerF){
             clsPrintElemento aux1=null;
-            if (numero>-1){
-                switch (seccionI){
-                    case 0:
-                        aux1=elementosEncabezado.get(numero);
-                        elementosEncabezado.remove(numero);
-                        addElemento(aux1,seccionF);
-                        break;
-                    case 1:
-                        aux1=elementosPie.get(numero);
-                        elementosPie.remove(numero);                    
-                        addElemento(aux1,seccionF);
-                        break;
-                    case 2:
-                        aux1=elementos.get(numero);
-                        elementos.remove(numero);
-                        addElemento(aux1,seccionF);
-                        break;
-                }
+            
+            if (numero>-1 && layerI >-1 && layerF>-1){
+                        aux1=capas.get(layerI).getObjeto(numero);
+                        capas.get(layerI).removeElemento(numero);
+                        addElemento(aux1,layerF);
             }
 
+        }
+        
+    //FUNCIONES DE GESTION DE CAPAS
+        public clsPrintLayer newLayer(){
+            clsPrintLayer aux = new clsPrintLayer(capas.size());
+            
+            capas.add(aux);
+            
+            return aux;
+        }
+        public clsPrintLayer newLayer(int id){
+            clsPrintLayer aux = new clsPrintLayer(id);
+            
+            capas.add(aux);
+            return aux;
+        }
+        public clsPrintLayer newLayer(int id, String name){
+            clsPrintLayer aux = new clsPrintLayer(id, name);
+            
+            capas.add(aux);
+            return aux;
+        }
+        public clsPrintLayer newLayer(String name){
+            clsPrintLayer aux = new clsPrintLayer(capas.size(), name);
+            
+            capas.add(aux);
+            return aux;
+        }
+        public void removeLayer(int n){
+            if (n>-1 && n<capas.size()) {
+                if (selectedLayer.getLayerID()==n) selectedLayer=null;
+                capas.remove(n);
+            }
+            
+            //COMPROMBAMOS SI SE HA ELIMINADO LA ULTIMA CAPA
+            if (capas.size()<1){
+                //SI NO HAY CAPAS SE CREA UNA
+                selectedLayer = new clsPrintLayer();
+                capas.add(selectedLayer);
+            }
+        }
+        public void clearLayers(){
+            capas.clear();
+        }
+        public boolean isLayer(int n){
+            boolean valor=false;
+            if (n>-1 && n<capas.size()){
+                valor=true;
+            }
+            
+            return valor;
         }
     
     //FUNCIONES DE GESTION DE ELEMENTOS
-        public clsPrintElemento addElemento(int seccion){
-            clsPrintElemento aux1=new clsPrintElemento();
-                switch (seccion){
-                    case 0:
-                        elementosEncabezado.add(aux1);
-                        break;
-                    case 1:
-                        elementosPie.add(aux1);
-                        break;
-                    case 2:
-                        elementos.add(aux1);
-                        break;
-                }
+        public clsPrintElemento addElemento(int layer){
+            clsPrintElemento aux1=new clsPrintElemento();    
+            capas.get(layer).addElemento(aux1);
+                
             return aux1;
         }
-        public void addElemento(clsPrintElemento elemento,int seccion){
-                switch (seccion){
-                    case 0:
-                        elementosEncabezado.add(elemento);
-                        break;
-                    case 1:
-                        elementosPie.add(elemento);
-                        break;
-                    case 2:
-                        elementos.add(elemento);
-                        break;
-                }
+        public void addElemento(clsPrintElemento elemento,int layer){
+            capas.get(layer).addElemento(elemento);
         }
-        public void eliminarElemento(int seccion, int numero){
+        public void removeElemento(int layer, int numero){
             clsPrintElemento aux1=null;
 
             if (numero>-1){
-                switch (seccion){
-                    case 0:
-                        elementosEncabezado.remove(numero);
-                        break;
-                    case 1:
-                        elementosPie.remove(numero);
-                        break;
-                    case 2:
-                        elementos.remove(numero);
-                        break;
-                }
+                capas.get(layer).removeElemento(numero);
             }
         }
-        public void duplicarElemento(int seccion, int numero){
-            clsPrintElemento aux1=null;
-            clsPrintElemento aux2=new clsPrintElemento();
-
-            if (numero>=0){
-                switch (seccion){
-                    case 0:
-                        aux1=elementosEncabezado.get(numero);
-                        break;
-                    case 1:
-                        aux1=elementosPie.get(numero);
-                        break;
-                    case 2:
-                        aux1=elementos.get(numero);
-                        break;
-                }
-            }
-
-                aux2.setAlto(clone(aux1.getAlto()));
-                aux2.setAncho(clone(aux1.getAncho()));
-                aux2.setAlineacionHorizontal(clone(aux1.getAlineacionHorizontal()));
-                aux2.setAlineacionVertical(clone(aux1.getAlineacionVertical()));
-                aux2.setAreaTileable(clone(aux1.getAreaTileable()));
-                aux2.setTileable(aux1.getTileable());
-                aux2.setBorde(aux1.getBorde());
-                aux2.setBordeColor(aux1.getBordeColor());
-                aux2.setBordeEspesor(clone(aux1.getBordeEspesor()));
-                aux2.setColor(aux1.getColor());
-                aux2.setColumna(aux1.getColumna());
-                aux2.setEspesor(clone(aux1.getEspesor()));
-                aux2.setFuente(aux1.getFuente());
-                aux2.setOrigenDatos(aux1.getOrigenDatos());
-                aux2.setPunto(clone(aux1.getPunto()));
-                aux2.setRelleno(aux1.getRelleno());
-                aux2.setRellenoColor(aux1.getRellenoColor());
-                aux2.setRotacion(clone(clone(aux1.getRotacion())));
-                aux2.setSeccion(clone(aux1.getSeccion()));
-                aux2.setTexto(clone(aux1.getTexto()));
-                aux2.setTipo(clone(aux1.getTipo()));
-                aux2.setTipoOrigen(clone(aux1.getTipoOrigen()));
-
-            addElemento(aux2,seccion);
+        public void duplicarElemento(int layer, int numero){
+            capas.get(layer).duplicateElemento(numero);   
         }
     
-    //FUNCIONES DE COPIA
-        public clsPrintElemento makeCopy(clsPrintElemento elemento){
-            clsPrintElemento ele=new clsPrintElemento();
-
-            ele.setTipo(elemento.getTipo());
-            ele.setPunto(elemento.getPunto());
-            ele.setAlto(elemento.getAlto());
-            ele.setAncho(elemento.getAncho());
-            ele.setTexto(elemento.getTexto());
-            ele.setOrigenDatos(elemento.getOrigenDatos());
-            ele.setTipoOrigen(elemento.getTipoOrigen());
-            ele.setFuente(elemento.getFuente());
-            ele.setColor(elemento.getColor());
-            ele.setRotacion(elemento.getRotacion());
-            ele.setBorde(elemento.getBorde());
-            ele.setBordeColor(elemento.getBordeColor());
-            ele.setBordeEspesor(elemento.getBordeEspesor());
-            ele.setRelleno(elemento.getRelleno());
-            ele.setRellenoColor(elemento.getRellenoColor());
-            ele.setSeccion(elemento.getSeccion());
-
-
-            return ele;
+    //FUNCIONES VARIAS
+        private int cantidadElementosDB(clsPrintElemento e, String origen){
+            //calcula la cantidad de registos ha mostrar de la base de datos
+            int cantidad=0;
+            if (!"".equals(origen)){
+                clsH2R r = DB.newSelect(origen);
+                cantidad=(int) r.getCantidad();
+                r.CloseSlect();
+            }
+            return cantidad;
         }
-        private int clone(int n){
-            String t = String.valueOf(n);
+        public int calcularPaginas(String origen){
+            int pag;
+            clsPrintElemento e;
+            pag=1;
+            
+            for (int l= 0;l<capas.size();l++){
+                //REVISAMOS TODAS LAS CAPAS
+                for (int i =0;i<capas.get(l).getCantidadElementos();i++){
+                    //REVISAMO LA CAPA ACTUAL
+                    e=(clsPrintElemento)capas.get(l).getObjeto(i);
+                    if (e.getTipo()==3 && e.getTileable()==true){
+                        //SI TIPO CAMPO ES TEXTO MIRAMOS CANTIDAD DE ELEMENTOS
+                        int cant = cantidadElementosDB(e,origen);
+                        int p =(int) cant/e.getRepeticiones();
 
-            return Integer.valueOf(t);
-        }
-        private String clone(String n){
-            String t = new String(n);
+                        //SI CANTIDAD DE PAGINAS NECESARIAS ES MAYOR QUE LA ACTUAL CAMBIAMOS A LA RESULTANTE
+                        if (p>pag) pag=p;
+                    }
+                }
+            }
 
-            return t;
-        }
-        private Point clone(Point n){
-            Point p= new Point();
-            p.x = clone(n.x);
-            p.y = clone(n.y);
-            return p;
+            return pag;
         }
         private Point alinear(Point p,int anchoT, int altoT,int anchoH, int altoH,int alineacionH, int alineacionV){
             Point po= new Point();
@@ -1352,6 +1046,23 @@ public class clsPrint implements Printable, Serializable{
 
                 return po;
         }
+        private String buscarOrigen(clsPrintElemento e){
+            String origen=e.getOrigenDatos();
+
+            if (origen.equals("")){
+                //INSERTAMOS EL ORIGEN DE DATOS DE LA PAGINA
+                origen =origenDatos;
+            }else{
+                //insertamos el valor de los ARG[]
+                if (arg!=null && !origen.equals("")){
+                    origen = insertarValor(origen,e.getTipoOrigen());
+                }else{
+                    origen="";
+                }
+            }
+
+            return origen;
+        }
         private String insertarValor(String g, int origen){
             String texto = g;
             if (arg!=null){
@@ -1375,87 +1086,39 @@ public class clsPrint implements Printable, Serializable{
             return texto;
         }
         private String buscarTexto(clsPrintElemento e, int posicion, String origen){
-        String texto="";
-        clsH2R r = DB.newSelect(origen);    
-            if (r.getCantidad()>0 ){        
-                r.moveTo(posicion);
-                switch (e.getTipoOrigen()){
-                    case 0:
-                        //texto
-                        texto=r.getString(e.getColumna());
-                        break;
-                    case 1:
-                        //entero
-                        texto=String.valueOf(r.getInt(e.getColumna()));
-                        break;
-                    case 2:
-                        //double
-                        texto=String.valueOf(redondear(r.getDouble(e.getColumna()),3));
-                        break;
-                    case 3:
-                        //fecha
-                        texto=formatStringDateSQLToStringDate(String.valueOf(r.getDate(e.getColumna())));
-                        break;
-                    case 4:
-                        //boolean
-                        texto=String.valueOf(r.getBoolean(e.getColumna()));
-                        break;
-                    case 5:
-                        //ID
-                        texto=formatoID(r.getInt(e.getColumna()));
-                        break;
+            String texto="";
+            clsH2R r = DB.newSelect(origen);    
+                if (r.getCantidad()>0 ){        
+                    r.moveTo(posicion);
+                    switch (e.getTipoOrigen()){
+                        case 0:
+                            //texto
+                            texto=r.getString(e.getColumna());
+                            break;
+                        case 1:
+                            //entero
+                            texto=String.valueOf(r.getInt(e.getColumna()));
+                            break;
+                        case 2:
+                            //double
+                            texto=String.valueOf(redondear(r.getDouble(e.getColumna()),3));
+                            break;
+                        case 3:
+                            //fecha
+                            texto=formatStringDateSQLToStringDate(String.valueOf(r.getDate(e.getColumna())));
+                            break;
+                        case 4:
+                            //boolean
+                            texto=String.valueOf(r.getBoolean(e.getColumna()));
+                            break;
+                        case 5:
+                            //ID
+                            texto=formatoID(r.getInt(e.getColumna()));
+                            break;
+                    }
                 }
-            }
-        r.CloseSlect();
-        return texto;
-    }
-    
-    //FUNCIONES VARIAS
-        private int cantidadElementosDB(clsPrintElemento e, String origen){
-            //calcula la cantidad de registos ha mostrar de la base de datos
-            int cantidad=0;
-            if (!"".equals(origen)){
-                clsH2R r = DB.newSelect(origen);
-                cantidad=(int) r.getCantidad();
-                r.CloseSlect();
-            }
-            return cantidad;
-        }
-        public int calcularPaginas(String origen){
-            int pag;
-            clsPrintElemento e;
-            pag=1;
-
-            for (int i =0;i<elementos.size();i++){
-                e=(clsPrintElemento)elementos.get(i);
-                if (e.getTipo()==3 && e.getTileable()==true){
-                    //si tipo campo texto
-                    int cant = cantidadElementosDB(e,origen);
-                    int p =(int) cant/e.getRepeticiones();
-
-                    //si cantidad de paginas necesarias en mayor que el actual cambiamos a estas
-                    if (p>pag) pag=p;
-                }
-            }
-
-            return pag;
-        }
-        private String buscarOrigen(clsPrintElemento e){
-            String origen=e.getOrigenDatos();
-
-            if (origen.equals("")){
-                //INSERTAMOS EL ORIGEN DE DATOS DE LA PAGINA
-                origen =origenDatos;
-            }else{
-                //insertamos el valor de los ARG[]
-                if (arg!=null && !origen.equals("")){
-                    origen = insertarValor(origen,e.getTipoOrigen());
-                }else{
-                    origen="";
-                }
-            }
-
-            return origen;
+            r.CloseSlect();
+            return texto;
         }
         private String recortarTexto(String Texto, int Ancho, Graphics ga, Font Fuente){
             String texto=Texto;
@@ -1485,128 +1148,49 @@ public class clsPrint implements Printable, Serializable{
             
             return valor;
         }
+        
+    //FUNCIONES DE BUSQUEDA
         public void searchElement(clsPrintElemento s){
             boolean valor=false;
             
-            //BUSCAR EN CONTENIDO
-            for (int i=0;i<elementos.size();i++){
-                if (elementos.get(i)==s){
-                    valor = true;
-                    selectedLayer=2;
-                    selectedId=i;
-                    break;
-                }
-            }
-            
-            //BUSCAR EN PIE
-            if (!valor){
-                for (int i=0;i<elementosPie.size();i++){
-                    if (elementosPie.get(i)==s){
+            for (int l=capas.size()-1;l>-1;l--){
+                for (int i=0;i<capas.get(i).getCantidadElementos();i++){
+                    if (capas.get(i).getObjeto(i)==s){
                         valor = true;
-                        selectedLayer=1;
+                        selectedLayer=capas.get(i);
                         selectedId=i;
                         break;
                     }
                 }
-            }
-            
-            //BUSCAR EN ENCABEZADO
-            if (!valor){
-                for (int i=0;i<elementosEncabezado.size();i++){
-                    if (elementosEncabezado.get(i)==s){
-                        valor = true;
-                        selectedLayer=0;
-                        selectedId=i;
-                        break;
-                    }
-                }
+                if (valor) break;
             }
         }
-        public void searchDown(Point p){
+        public void searchClick(Point p){
             clsPrintElemento valor=null;
-            
-            //BUSCAR EN CONTENIDO
-            valor = searchInLayer(2,p,0);
-            
-            //BUSCAR EN PIE
-            if (valor==null) valor = searchInLayer(1,p,0);
-            
-            //BUSCAR EN ENCABEZADO
-            if (valor==null) valor = searchInLayer(0,p,0);
+            for (int l=capas.size()-1;l>-1;l--){
+                valor=capas.get(l).searchClick(p);
+                if (valor!=null) break;
+            }
             
             selected=valor;
         }
-        public void searchDownNext(Point p){
+        public void searchClickNext(Point p){
             clsPrintElemento valor=null;
+            int layerA = selectedLayer.getSelectedId();
             
-            if (selectedLayer==2){
-                //EMPIEZA A BUSCAR EN CONTENIDO
-                //BUSCAR EN CONTENIDO
-                    valor = searchInLayer(2,p,selectedId+1);
-                //BUSCAR EN PIE
-                    if (valor==null) valor = searchInLayer(1,p,0);
-                //BUSCAR EN ENCABEZADO
-                    if (valor==null) valor = searchInLayer(0,p,0);
-            }else if (selectedLayer==1){
-                //EMPIEZA A BUSCAR EN PIE
-                //BUSCAR EN PIE
-                    valor = searchInLayer(1,p,selectedId+1);
-                //BUSCAR EN ENCABEZADO
-                    if (valor==null) valor = searchInLayer(0,p,0);
-            }else if (selectedLayer==0){
-                //EMPIEZA A BUSCAR EN ENCABEZADO
-                //BUSCAR EN ENCABEZADO
-                    valor = searchInLayer(0,p,selectedId+1);
+            valor=capas.get(layerA).searchClickNext(p);
+            
+            if (valor==null){
+                for (int l=layerA-1;l>-1;l--){
+                    valor=capas.get(l).searchClick(p);
+                    if (valor!=null) break;
+                }
             }
+            
             
             if (valor!=null)selected=valor;
         }
-        public clsPrintElemento searchInLayer(int layer, Point p, int inicio){
-            clsPrintElemento valor=null;
-            selectedLayer=-1;
-            selectedId=-1;
-            
-            //BUSCAR EN ENCABEZADO
-            if (layer==0){
-                for (int i=inicio;i<elementosEncabezado.size();i++){
-                    if (elementosEncabezado.get(i).isDown(p)){
-                        valor = elementosEncabezado.get(i);
-                        
-                        selectedLayer=0;
-                        selectedId=i;
-                        break;
-                    }
-                }
-            }
-            
-            //BUSCAR EN PIE
-            if (layer==1){
-                for (int i=inicio;i<elementosPie.size();i++){
-                    if (elementosPie.get(i).isDown(p)){
-                        valor = elementosPie.get(i);
-                        selectedLayer=1;
-                        selectedId=i;
-                        break;
-                    }
-                }
-            }
-            
-            
-            //BUSCAR EN CONTENIDO
-            if (layer==2){
-                for (int i=inicio;i<elementos.size();i++){
-                    if (elementos.get(i).isDown(p)){
-                        valor = elementos.get(i);
-                        selectedLayer=2;
-                        selectedId=i;
-                        break;
-                    }
-                }
-            }
-            
-            return valor;
-        }
-    
+        
     // FUNCIONES DE CONVERSION
         public String formatoID(Double n){
             DecimalFormat format = new DecimalFormat("0000000");
