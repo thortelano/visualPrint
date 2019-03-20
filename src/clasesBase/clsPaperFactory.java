@@ -64,4 +64,17 @@ public class clsPaperFactory {
         
         return papel;
     }
+    public Paper createPaperLandscape(String type){
+        Paper papel = new Paper();
+        int i;
+        for (i=0;i<types.length;i++){
+            if (types[i][0].equals(type)){
+                break;
+            }
+        }
+        
+        papel.setSize(Integer.valueOf(types[i][2]), Integer.valueOf(types[i][1]));
+        
+        return papel;
+    }
 }

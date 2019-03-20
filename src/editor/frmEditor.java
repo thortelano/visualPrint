@@ -144,6 +144,7 @@ public class frmEditor extends JDialog {
     miButton btnSubir;
     miButton btnBajar;
     miButton btnMover;
+    miButton btnLayer;
     
     miButton btn1;
     miButton btn2;
@@ -302,6 +303,9 @@ public class frmEditor extends JDialog {
          btnMover= new miButton("Mover A:");
             btnMover.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
             btnMover.setIcon(new ImageIcon(getClass().getResource("/Images/insert.png")));
+         btnLayer= new miButton("");
+            btnLayer.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+            btnLayer.setIcon(new ImageIcon(getClass().getResource("/Images/list2.png")));
         
          btn1= new miButton("...");
          btn2= new miButton("...");
@@ -416,6 +420,10 @@ public class frmEditor extends JDialog {
             .addComponent(sep,javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
         pnlPrinter.setLayout(layout);
+        
+        txtFileName.setEditable(false);
+        txtFileDir.setEditable(false);
+        cmbConexion.setEnabled(false);
     }
     private void inicializarUIGestion(){
         JSeparator sep1 = new JSeparator();
@@ -430,7 +438,8 @@ public class frmEditor extends JDialog {
         layout.setHorizontalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(lblLayer,javax.swing.GroupLayout.PREFERRED_SIZE, at, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addComponent(cmbLayer,javax.swing.GroupLayout.PREFERRED_SIZE, al, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(cmbLayer,javax.swing.GroupLayout.PREFERRED_SIZE, al-45, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnLayer,javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
             )
             .addGroup(layout.createSequentialGroup()
                     .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
@@ -454,8 +463,9 @@ public class frmEditor extends JDialog {
         int h=32;
         layout.setVerticalGroup(layout.createSequentialGroup()
             .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                .addComponent(lblLayer,javax.swing.GroupLayout.PREFERRED_SIZE, ht, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addComponent(cmbLayer,javax.swing.GroupLayout.PREFERRED_SIZE, ht, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(lblLayer,javax.swing.GroupLayout.PREFERRED_SIZE, h, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(cmbLayer,javax.swing.GroupLayout.PREFERRED_SIZE, h, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnLayer,javax.swing.GroupLayout.PREFERRED_SIZE, h, javax.swing.GroupLayout.PREFERRED_SIZE)
             )
             .addGap(10)
             .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
@@ -923,6 +933,19 @@ public class frmEditor extends JDialog {
             mostrarElemento();
             visor.repaint();
         }
+        private void abrirCapas(){
+            frmLayers f = new frmLayers(printer);
+            f.setLocationRelativeTo(this);
+            f.setModal(true);
+            
+            f.setVisible(true);
+            
+            cargarLayers(cmbLayer);
+            cargarLayers(cmbToLayer);
+            cmbLayer.setSelectedIndex(printer.getSelectedLayerID());
+            
+            visor.repaint();
+        }
     
     //FUNCIONES GET & SET
         public void setDireccion(String s){
@@ -965,13 +988,14 @@ public class frmEditor extends JDialog {
             visor.repaint();
         }
         public void actualizarElemeto(int layer, int pos){
-            layerActual=layer;
             cmbLayer.setSelectedIndex(layer);
             
-            mostrarLista();
             lista.setSelectedIndex(pos);
             lista.ensureIndexIsVisible(pos);
             
+            if (!printer.getSelectedLayer().isVisible()){
+                printer.setSelected(null);
+            }
             mostrarElemento();
         }
     
@@ -1534,6 +1558,7 @@ public class frmEditor extends JDialog {
             
             lista.addMouseListener(inicializarListenerLista());
             cmbLayer.addActionListener(inicializarListenerLayer());
+            btnLayer.addActionListener(inicializarListenerLayers());
             btnNuevo.addActionListener(inicializarListenerNuevo());
             btnDuplicar.addActionListener(inicializarListenerDuplicar());
             btnEliminar.addActionListener(inicializarListenerEliminar());
@@ -1620,7 +1645,16 @@ public class frmEditor extends JDialog {
         private ActionListener inicializarListenerLayer(){
             return (ActionEvent evt) -> {
                 layerActual=cmbLayer.getSelectedIndex();
-                printer.setSelectedLayer(layerActual);
+                
+                if (layerActual != printer.getSelectedLayerID()){
+                    printer.setSelectedLayer(layerActual);
+                    if (printer.getSelectedLayer().isVisible()){
+                        lista.setEnabled(true);
+                    }else{
+                        lista.setEnabled(false);
+                    }
+                }
+                
                 
                 mostrarLista();
             };
@@ -1703,7 +1737,7 @@ public class frmEditor extends JDialog {
                         printer.getSelected().setTipo(cmbTipo.getSelectedIndex());
                         String nombre=lista.getSelectedIndex()+ "-" + printer.getSelected().getTipoString();
                         modelo.set(lista.getSelectedIndex(),nombre);
-                        //actualizar();
+                        
                     }
                     configurarTipo();
                 }
@@ -2391,6 +2425,11 @@ public class frmEditor extends JDialog {
                 if (printer.getSelected()!=null){
                     abrirFuentes();
                 }
+            };
+        }
+        private ActionListener inicializarListenerLayers(){
+            return (ActionEvent evt) -> {                
+                    abrirCapas();
             };
         }
 }

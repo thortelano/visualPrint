@@ -117,6 +117,7 @@ public class clsPrintLayer implements Serializable{
             if (numero<elementos.size()-1){
                 aux1= elementos.get(numero+1);
                 aux2= elementos.get(numero);
+                
                 elementos.set(numero+1,aux2);
                 elementos.set(numero,aux1);
             }
@@ -274,6 +275,10 @@ public class clsPrintLayer implements Serializable{
         }
         public void setLayerID(int n){
             layerID = n;
+            
+            for (int i=0;i<elementos.size();i++){
+                elementos.get(i).setLayer(n);
+            }
         }
         public void setNombre (String name){
             nombre = name;

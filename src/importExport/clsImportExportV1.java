@@ -284,6 +284,7 @@ public class clsImportExportV1 {
         aux.setRepeticiones(Integer.valueOf(partes[32]));
         aux.setTileable(Boolean.valueOf(partes[33]));
         aux.setPosicion(Integer.valueOf(partes[34]));
+        aux.setLayer(layer);
         
         printer.addElemento(aux, layer);
     }

@@ -15,6 +15,7 @@ import java.io.Serializable;
  * @author toni
  */
 public class clsPrintElemento implements Serializable {
+    private static final String[] typeName = {"Vacio","Imagen","Titulo","Texto", "Linea","Rectangulo","Circulo"};
     private int tipo; //0-vacio, 1-imagen, 2-Titulo, 3-Campo texto, 4-linea, 5-Rectangulo, 6-circulo    
     private Point punto; //posicion
     private Point areaTileable; //area de repeticion
@@ -33,7 +34,7 @@ public class clsPrintElemento implements Serializable {
     private int bordeEspesor;
     private boolean relleno;
     private Color rellenoColor;
-    private int seccion; //0-encabezado , 1-pie, 2-contenido
+    private int layer; //0-encabezado , 1-pie, 2-contenido
     private int alineacionVertical; //0-central , 1-izquierda, 2-derecha
     private int alineacionHorizontal; //0-central , 1-arriba, 2-abajo
     private int repeticiones;
@@ -167,7 +168,7 @@ public class clsPrintElemento implements Serializable {
             return rellenoColor;
         }
         public int getSeccion() {
-            return seccion;
+            return layer;
         }
         public Point getAreaTileable() {
             return areaTileable;
@@ -192,6 +193,15 @@ public class clsPrintElemento implements Serializable {
         }
         public boolean getTileable(){
             return tileable;
+        }
+        public int getLayer(){
+            return layer;
+        }
+        public String getTypeName(){
+            return typeName[tipo];
+        }
+        public String getTypeName(int n){
+            return typeName[n];
         }
 
         public void setPunto(Point punto) {
@@ -252,7 +262,7 @@ public class clsPrintElemento implements Serializable {
             this.rellenoColor = rellenoColor;
         }
         public void setLayer(int seccion) {
-            this.seccion = seccion;
+            this.layer = seccion;
         }
         public void setColumna(String Columna) {
             this.Columna = Columna;
@@ -292,6 +302,7 @@ public class clsPrintElemento implements Serializable {
         public void setTileable(boolean b){
             tileable= b;
         }
+        
     
     //FUNCIONES DE CREACION
         public void crearImagen(int X, int Y, int Ancho, int Alto, String Direccion){

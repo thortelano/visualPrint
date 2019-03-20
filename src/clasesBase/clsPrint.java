@@ -226,17 +226,20 @@ public class clsPrint implements Printable, Serializable{
         public void setSelected (clsPrintElemento s){
             selected = s;
             
-            //searchElement(s);
+            if (s==null){
+                selectedId=-1;
+            }
         }
         public void setFormatoPapel(String s){
             formatoPapel=s;
-            hoja= formatos.createPaper(s);
+            if (orientacion==PageFormat.LANDSCAPE) hoja= formatos.createPaperLandscape(s);
+            else hoja= formatos.createPaper(s);
             inicializarMargen();
         }
         public void setOrientacion(int h){
             if (h>-1) {
                 orientacion=h;
-                pf.setOrientation(h);
+                setFormatoPapel(formatoPapel);
             }
         }
         public void setFileName(String s){
@@ -693,50 +696,50 @@ public class clsPrint implements Printable, Serializable{
             g2.setStroke(stroke);
         }
         private void mostrarTextoEdit(Graphics ga, clsPrintElemento e, int pag){
-        Graphics2D g2 = (Graphics2D) ga;
-        Point p= new Point();
-        String texto="";
-        FontMetrics fm= ga.getFontMetrics(e.getFuente());
-        
-        int ancho;
-        int alto;
-        
-        //CARGAMOS EL PUNTO DE INSERCION
-            p.x = e.getPuntoX();
-            p.y = e.getPuntoY();
-        
-        //MUESTRA ZONA DE REPETICION
-            g2.setStroke(dashed);
-            g2.setColor(Color.lightGray);
+            Graphics2D g2 = (Graphics2D) ga;
+            Point p= new Point();
+            String texto="";
+            FontMetrics fm= ga.getFontMetrics(e.getFuente());
 
-            g2.drawRect(p.x, p.y, e.getAreaTileableX(),e.getAreaTileableY());
-            g2.setStroke(stroke);
-       
-        //OBTENEMOS EL TEXTO A MOSTRAR
-            texto=e.getTexto();
-            
-        //DIMENSIONAMOS EL TEXTO VISIBLE EN EL ESPACIO DISPONIBLE
-            //RECORTAMOS EL ANCHO DE TEXTO SI NO ENTRA
-            texto=recortarTexto(texto,e.getAncho(),ga,e.getFuente());
-            ancho=fm.stringWidth(texto);
-            alto=fm.getHeight();
+            int ancho;
+            int alto;
 
-            //RECORTAMOS EL ALTO DE TEXTO SI NO ENTRA
-            if (alto<e.getAlto()){
-                int x,y;
-                g2.setColor(e.getColor());
-                g2.setFont(e.getFuente());
+            //CARGAMOS EL PUNTO DE INSERCION
+                p.x = e.getPuntoX();
+                p.y = e.getPuntoY();
 
-                //escribimos
-                Point po = alinear(p,ancho,alto,e.getAncho(),e.getAlto(),e.getAlineacionHorizontal(),e.getAlineacionVertical());
-                g2.drawString(texto,po.x ,po.y);
-            }
-            
-        //DIJAMOS EL BORDE
-            if (e.getBorde()==true){
-                mostrarBorde(g2,e);
-            }
-    }
+            //MUESTRA ZONA DE REPETICION
+                g2.setStroke(dashed);
+                g2.setColor(Color.lightGray);
+
+                g2.drawRect(p.x, p.y, e.getAreaTileableX(),e.getAreaTileableY());
+                g2.setStroke(stroke);
+
+            //OBTENEMOS EL TEXTO A MOSTRAR
+                texto=e.getTexto();
+
+            //DIMENSIONAMOS EL TEXTO VISIBLE EN EL ESPACIO DISPONIBLE
+                //RECORTAMOS EL ANCHO DE TEXTO SI NO ENTRA
+                texto=recortarTexto(texto,e.getAncho(),ga,e.getFuente());
+                ancho=fm.stringWidth(texto);
+                alto=fm.getHeight();
+
+                //RECORTAMOS EL ALTO DE TEXTO SI NO ENTRA
+                if (alto<e.getAlto()){
+                    int x,y;
+                    g2.setColor(e.getColor());
+                    g2.setFont(e.getFuente());
+
+                    //escribimos
+                    Point po = alinear(p,ancho,alto,e.getAncho(),e.getAlto(),e.getAlineacionHorizontal(),e.getAlineacionVertical());
+                    g2.drawString(texto,po.x ,po.y);
+                }
+
+            //DIJAMOS EL BORDE
+                if (e.getBorde()==true){
+                    mostrarBorde(g2,e);
+                }
+        }
     
     //FUNCIONES DE CREACION
         public clsPrintElemento addImagen(int X, int Y, int Ancho, int Alto, String Direccion, int layer){
@@ -949,6 +952,35 @@ public class clsPrint implements Printable, Serializable{
             }
             
             return valor;
+        }
+        
+        public void moveUPLayer(int numero){
+            clsPrintLayer aux1=null;
+            clsPrintLayer aux2=null;
+
+            if (numero>0){
+                aux1= capas.get(numero-1);
+                aux1.setLayerID(numero);
+                aux2= capas.get(numero);
+                aux2.setLayerID(numero-1);
+                
+                capas.set(numero-1,aux2);
+                capas.set(numero,aux1);
+            }
+        }
+        public void moveDownLayer(int numero){
+            clsPrintLayer aux1=null;
+            clsPrintLayer aux2=null;
+
+            if (numero<capas.size()-1){
+                aux1= capas.get(numero+1);
+                aux1.setLayerID(numero);
+                aux2= capas.get(numero);
+                aux2.setLayerID(numero+1);
+                
+                capas.set(numero+1,aux2);
+                capas.set(numero,aux1);
+            }
         }
     
     //FUNCIONES DE GESTION DE ELEMENTOS
@@ -1171,23 +1203,37 @@ public class clsPrint implements Printable, Serializable{
         public void searchClick(Point p){
             clsPrintElemento valor=null;
             for (int l=capas.size()-1;l>-1;l--){
-                valor=capas.get(l).searchClick(p);
-                if (valor!=null) break;
+                if (capas.get(l).isVisible()){
+                    valor=capas.get(l).searchClick(p);
+                    if (valor!=null){
+                        selectedLayer = capas.get(l);
+                        selectedId = selectedLayer.getSelectedId();
+                        break;
+                    }
+                }
             }
             
             selected=valor;
         }
         public void searchClickNext(Point p){
             clsPrintElemento valor=null;
-            int layerA = selectedLayer.getSelectedId();
+            int layerA = selectedLayer.getLayerID();
             
             valor=capas.get(layerA).searchClickNext(p);
             
             if (valor==null){
                 for (int l=layerA-1;l>-1;l--){
-                    valor=capas.get(l).searchClick(p);
-                    if (valor!=null) break;
+                    if (capas.get(l).isVisible()){
+                        valor=capas.get(l).searchClick(p);
+                        if (valor!=null){
+                            selectedLayer = capas.get(l);
+                            selectedId = selectedLayer.getSelectedId();
+                            break;
+                        }
+                    }
                 }
+            }else{
+                selectedId = selectedLayer.getSelectedId();
             }
             
             
