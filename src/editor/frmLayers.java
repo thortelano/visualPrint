@@ -51,7 +51,7 @@ public class frmLayers extends JDialog{
     myDefaultTableModel model= new myDefaultTableModel();
     miTable tabla;
     
-    private String titulos[]= {" Id"," Nombre"," Visible"," Imprimible"," Cant"};
+    private String titulos[]= {" Id"," Nombre"," Visible"," Imprimible"," Cant. Elem."};
     private int titulosMax[]= {100,350,150,150,150};
     private int titulosTamaño[]= {40,150,100,100,100};
     

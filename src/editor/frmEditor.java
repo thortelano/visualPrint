@@ -942,7 +942,13 @@ public class frmEditor extends JDialog {
             
             cargarLayers(cmbLayer);
             cargarLayers(cmbToLayer);
+            
             cmbLayer.setSelectedIndex(printer.getSelectedLayerID());
+            
+            if (!printer.getSelectedLayer().isVisible()){
+                printer.setSelected(null);
+                mostrarElemento();
+            }
             
             visor.repaint();
         }
@@ -993,9 +999,6 @@ public class frmEditor extends JDialog {
             lista.setSelectedIndex(pos);
             lista.ensureIndexIsVisible(pos);
             
-            if (!printer.getSelectedLayer().isVisible()){
-                printer.setSelected(null);
-            }
             mostrarElemento();
         }
     
